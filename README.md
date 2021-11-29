@@ -1,6 +1,6 @@
 # Simple password generator
 
-## Awailable at:
+## Available at:
 
 Default lenght is 20
 
@@ -10,4 +10,4 @@ https://mencnert.github.io/simple-password-generator?len=16
 
 ## TODO
 
-- [ ] #1
+- [ ] https://github.com/mencnert/simple-password-generator/issues/1
