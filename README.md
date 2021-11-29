@@ -10,4 +10,4 @@ https://mencnert.github.io/simple-password-generator?len=16
 
 ## TODO
 
-[ ] Style
+- [ ] #1
