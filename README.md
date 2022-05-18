@@ -1,9 +1,8 @@
 # Simple password generator
 
-## Available at:
-
-Default lenght is 20
+- Open source
+- Client site
+- Easy to use
+- Copy on click
 
 https://mencnert.github.io/simple-password-generator
-
-https://mencnert.github.io/simple-password-generator?len=16
