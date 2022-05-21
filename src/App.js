@@ -1,5 +1,6 @@
 import {useState, useEffect} from "react";
 
+const jsmeveVetvi = 20
 const DEFAULT_PASS_LEN = 20;
 const DEFAULT_LOWER_CASE_CHARS = true;
 const DEFAULT_UPPER_CASE_CHARS = true;
