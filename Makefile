@@ -1,2 +1,3 @@
-deploy:
-	npm run deploy
+bundle:
+	mkdir -p build
+	npm run build
