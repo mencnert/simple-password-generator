@@ -1,0 +1,20 @@
+{
+  "name": "simple-password-generator",
+  "version": "1.0.0",
+  "description": "Simple web client site password generator",
+  "devDependencies": {
+    "@minify-html/js": "^0.8.1"
+  },
+  "scripts": {
+    "build": "minify-html --output build/index.html --minify-css --minify-js src/index.html"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mencnert/simple-password-generator.git"
+  },
+  "author": "mencnert",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mencnert/simple-password-generator/issues"
+  }
+}
