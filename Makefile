@@ -1,2 +1,0 @@
-deploy:
-	npm run deploy
