@@ -1,3 +1,3 @@
 bundle:
-	mkdir -p build
+	mkdir -p docs
 	npm run build

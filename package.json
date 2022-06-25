@@ -6,7 +6,7 @@
     "@minify-html/js": "^0.8.1"
   },
   "scripts": {
-    "build": "minify-html --output build/index.html --minify-css --minify-js src/index.html"
+    "build": "minify-html --output docs/index.html --minify-css --minify-js src/index.html"
   },
   "repository": {
     "type": "git",
