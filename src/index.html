@@ -147,6 +147,12 @@
       button:last-of-type:hover {
         background: #d1d5db;
       }
+
+      #copyBtn.copied,
+      #copyBtn.copied:hover {
+        background: #16a34a;
+        color: #ffffff;
+      }
     </style>
   </head>
   <body>
@@ -203,7 +209,11 @@
           <button data-i18n="newPassword" onClick="setNewPassword()">
             Nové heslo
           </button>
-          <button data-i18n="copyToClipboard" onClick="copyToClipboard()">
+          <button
+            id="copyBtn"
+            data-i18n="copyToClipboard"
+            onClick="copyToClipboard()"
+          >
             Kopírovat
           </button>
         </div>
@@ -232,6 +242,7 @@
           specialChars: "Special chars:",
           newPassword: "New password",
           copyToClipboard: "Copy",
+          copied: "✓ Copied!",
         },
         cs: {
           pageTitle: "Generátor hesel",
@@ -245,8 +256,12 @@
           specialChars: "Speciální znaky:",
           newPassword: "Nové heslo",
           copyToClipboard: "Kopírovat",
+          copied: "✓ Zkopírováno!",
         },
       };
+
+      let currentLang = DEFAULT_LANG;
+      let copyFeedbackTimeout = null;
 
       function getInitialLanguage() {
         const stored = localStorage.getItem(LANG_STORAGE_KEY);
@@ -255,6 +270,7 @@
 
       function applyLanguage(lang) {
         const dict = translations[lang] || translations[DEFAULT_LANG];
+        currentLang = translations[lang] ? lang : DEFAULT_LANG;
 
         document.documentElement.lang = lang;
         document.title = dict.pageTitle;
@@ -315,23 +331,54 @@
         return result;
       }
 
-      function copyToClipboard() {
+      function showCopiedFeedback() {
+        const button = document.getElementById("copyBtn");
+        const dict = translations[currentLang] || translations[DEFAULT_LANG];
+
+        clearTimeout(copyFeedbackTimeout);
+        button.textContent = dict.copied;
+        button.classList.add("copied");
+        copyFeedbackTimeout = setTimeout(() => {
+          button.textContent = dict.copyToClipboard;
+          button.classList.remove("copied");
+        }, 3000);
+      }
+
+      async function copyToClipboard() {
         const input = document.getElementById("passId");
         const text = input.value;
-        input.select();
-        if (window.clipboardData && window.clipboardData.setData) {
-          return window.clipboardData.setData("Text", text);
-        } else if (
-          document.queryCommandSupported &&
-          document.queryCommandSupported("copy")
-        ) {
+        let success = false;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
           try {
-            return document.execCommand("copy");
+            await navigator.clipboard.writeText(text);
+            success = true;
           } catch (ex) {
             console.warn("Copy to clipboard failed.", ex);
-            return false;
           }
         }
+
+        if (!success) {
+          input.select();
+          if (window.clipboardData && window.clipboardData.setData) {
+            success = window.clipboardData.setData("Text", text);
+          } else if (
+            document.queryCommandSupported &&
+            document.queryCommandSupported("copy")
+          ) {
+            try {
+              success = document.execCommand("copy");
+            } catch (ex) {
+              console.warn("Copy to clipboard failed.", ex);
+            }
+          }
+        }
+
+        if (success) {
+          showCopiedFeedback();
+        }
+
+        return success;
       }
 
       function getNewPassword() {
