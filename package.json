@@ -16,5 +16,8 @@
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/mencnert/simple-password-generator/issues"
+  },
+  "allowScripts": {
+    "@minify-html/js@0.8.1": true
   }
 }

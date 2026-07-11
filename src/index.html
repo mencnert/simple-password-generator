@@ -1,11 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="cs">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Website to generate passwords locally" />
-    <title>Simple password generator</title>
+    <meta
+      name="description"
+      content="Web pro generování hesel lokálně v prohlížeči"
+    />
+    <title>Generátor hesel</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -46,6 +49,19 @@
         font-size: 1.6em;
         text-align: center;
         color: #1f2937;
+      }
+
+      #langSwitcher {
+        display: block;
+        margin: 0 0 16px auto;
+        padding: 6px 10px;
+        font-size: 0.9em;
+        color: #374151;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        cursor: pointer;
+        color-scheme: light;
       }
 
       .field {
@@ -134,41 +150,62 @@
     </style>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript data-i18n="noscript">
+      Pro spuštění této aplikace musíte povolit JavaScript.
+    </noscript>
     <div id="root">
       <div class="card">
-        <h1>Simple Password Generator</h1>
+        <select
+          id="langSwitcher"
+          onchange="applyLanguage(this.value)"
+          aria-label="Language / Jazyk"
+        >
+          <option value="cs">Čeština</option>
+          <option value="en">English</option>
+        </select>
+
+        <h1 data-i18n="heading">Generátor hesel</h1>
 
         <div class="field">
-          <label>Password length:</label>
+          <label for="passLen" data-i18n="passwordLength">Délka hesla:</label>
           <input id="passLen" type="number" />
         </div>
 
         <div class="field">
-          <label>Lowercase chars:</label>
+          <label for="lowerCaseChars" data-i18n="lowerCaseChars"
+            >Malá písmena:</label
+          >
           <input id="lowerCaseChars" type="checkbox" />
         </div>
 
         <div class="field">
-          <label>Uppercase chars:</label>
+          <label for="upperCaseChars" data-i18n="upperCaseChars"
+            >Velká písmena:</label
+          >
           <input id="upperCaseChars" type="checkbox" />
         </div>
 
         <div class="field">
-          <label>Number chars:</label>
+          <label for="numberChars" data-i18n="numberChars">Číslice:</label>
           <input id="numberChars" type="checkbox" />
         </div>
 
         <div class="field">
-          <label>Special chars:</label>
+          <label for="specialChars" data-i18n="specialChars"
+            >Speciální znaky:</label
+          >
           <input id="specialChars" type="checkbox" />
         </div>
 
         <input id="passId" type="text" readonly />
 
         <div class="buttons">
-          <button onClick="setNewPassword()">New password</button>
-          <button onClick="copyToClipboard()">Copy to clipboard</button>
+          <button data-i18n="newPassword" onClick="setNewPassword()">
+            Nové heslo
+          </button>
+          <button data-i18n="copyToClipboard" onClick="copyToClipboard()">
+            Kopírovat do schránky
+          </button>
         </div>
       </div>
     </div>
@@ -178,6 +215,67 @@
       const DEFAULT_UPPER_CASE_CHARS = true;
       const DEFAULT_NUMBER_CHARS = true;
       const DEFAULT_SPECIAL_CHARS = true;
+
+      const LANG_STORAGE_KEY = "lang";
+      const DEFAULT_LANG = "cs";
+
+      const translations = {
+        en: {
+          pageTitle: "Simple password generator",
+          metaDescription: "Website to generate passwords locally",
+          noscript: "You need to enable JavaScript to run this app.",
+          heading: "Simple Password Generator",
+          passwordLength: "Password length:",
+          lowerCaseChars: "Lowercase chars:",
+          upperCaseChars: "Uppercase chars:",
+          numberChars: "Number chars:",
+          specialChars: "Special chars:",
+          newPassword: "New password",
+          copyToClipboard: "Copy to clipboard",
+        },
+        cs: {
+          pageTitle: "Generátor hesel",
+          metaDescription: "Web pro generování hesel lokálně v prohlížeči",
+          noscript: "Pro spuštění této aplikace musíte povolit JavaScript.",
+          heading: "Generátor hesel",
+          passwordLength: "Délka hesla:",
+          lowerCaseChars: "Malá písmena:",
+          upperCaseChars: "Velká písmena:",
+          numberChars: "Číslice:",
+          specialChars: "Speciální znaky:",
+          newPassword: "Nové heslo",
+          copyToClipboard: "Kopírovat do schránky",
+        },
+      };
+
+      function getInitialLanguage() {
+        const stored = localStorage.getItem(LANG_STORAGE_KEY);
+        return stored === "en" || stored === "cs" ? stored : DEFAULT_LANG;
+      }
+
+      function applyLanguage(lang) {
+        const dict = translations[lang] || translations[DEFAULT_LANG];
+
+        document.documentElement.lang = lang;
+        document.title = dict.pageTitle;
+
+        const metaDescription = document.querySelector(
+          'meta[name="description"]',
+        );
+        if (metaDescription) {
+          metaDescription.setAttribute("content", dict.metaDescription);
+        }
+
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const key = el.getAttribute("data-i18n");
+          if (dict[key]) {
+            el.textContent = dict[key];
+          }
+        });
+
+        document.getElementById("langSwitcher").value = lang;
+        localStorage.setItem(LANG_STORAGE_KEY, lang);
+      }
 
       /**
        *
@@ -257,6 +355,8 @@
       function setNewPassword() {
         document.getElementById("passId").value = getNewPassword();
       }
+
+      applyLanguage(getInitialLanguage());
 
       document.getElementById("passLen").value = DEFAULT_PASS_LEN;
       document.getElementById("lowerCaseChars").checked =
