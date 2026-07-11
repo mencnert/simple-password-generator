@@ -129,6 +129,102 @@
         background: #f5f3ff;
       }
 
+      .strength-info {
+        padding: 12px 0;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .strength-meter {
+        height: 8px;
+        border-radius: 4px;
+        background: #e5e7eb;
+        overflow: hidden;
+        margin-bottom: 12px;
+      }
+
+      .strength-meter-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 4px;
+        background: #d1d5db;
+        transition:
+          width 0.2s ease,
+          background 0.2s ease;
+      }
+
+      .strength-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        color: #374151;
+        font-size: 0.85em;
+        padding: 2px 0;
+      }
+
+      .strength-row > span:first-child {
+        font-weight: 500;
+      }
+
+      .strength-row > span:last-child {
+        color: #1f2937;
+        font-weight: 600;
+        text-align: right;
+      }
+
+      .strength-label-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .info-icon {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #d1d5db;
+        color: #374151;
+        font-size: 0.7em;
+        font-weight: 700;
+        line-height: 1;
+        cursor: help;
+      }
+
+      .info-icon .tooltip {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: 220px;
+        background: #1f2937;
+        color: #ffffff;
+        font-size: 1.15em;
+        font-weight: 400;
+        line-height: 1.5;
+        padding: 8px 10px;
+        border-radius: 8px;
+        text-align: left;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+        z-index: 10;
+      }
+
+      .tooltip-row {
+        display: block;
+      }
+
+      .info-icon:hover .tooltip,
+      .info-icon:focus .tooltip,
+      .info-icon:focus-visible .tooltip {
+        opacity: 1;
+      }
+
       .buttons {
         display: flex;
         gap: 12px;
@@ -228,6 +324,35 @@
           <input id="specialChars" type="checkbox" />
         </div>
 
+        <div class="strength-info">
+          <div class="strength-meter">
+            <div id="strengthMeterFill" class="strength-meter-fill"></div>
+          </div>
+          <div class="strength-row">
+            <span class="strength-label-group">
+              <span data-i18n="strengthTierLabel">Síla hesla:</span>
+              <span class="info-icon" tabindex="0" aria-describedby="strengthTooltip"
+                >ⓘ
+                <span class="tooltip" id="strengthTooltip" role="tooltip">
+                  <span class="tooltip-row">
+                    <span data-i18n="combinationsLabel"
+                      >Možných kombinací:</span
+                    >
+                    <span id="combinationsValue"></span>
+                  </span>
+                  <span class="tooltip-row">
+                    <span data-i18n="crackTimeLabel"
+                      >Odhadovaný čas na prolomení:</span
+                    >
+                    <span id="crackTimeValue"></span>
+                  </span>
+                </span>
+              </span>
+            </span>
+            <span id="strengthTierValue"></span>
+          </div>
+        </div>
+
         <input id="passId" type="text" readonly />
 
         <div class="buttons">
@@ -267,6 +392,22 @@
           upperCaseChars: "Uppercase chars:",
           numberChars: "Number chars:",
           specialChars: "Special chars:",
+          strengthTierLabel: "Password strength:",
+          combinationsLabel: "Possible combinations:",
+          crackTimeLabel: "Estimated time to crack:",
+          tierVeryWeak: "Very weak",
+          tierWeak: "Weak",
+          tierFair: "Fair",
+          tierStrong: "Strong",
+          tierVeryStrong: "Very strong",
+          timeUnitSeconds: "seconds",
+          timeUnitMinutes: "minutes",
+          timeUnitHours: "hours",
+          timeUnitDays: "days",
+          timeUnitYears: "years",
+          crackTimeLessThanOne: "instantly",
+          crackTimeSciFormat: "~{value} {unit}",
+          noCharSetSelected: "Select at least one character type",
           newPassword: "New password",
           copyToClipboard: "Copy",
           copied: "✓ Copied!",
@@ -281,6 +422,22 @@
           upperCaseChars: "Velká písmena:",
           numberChars: "Číslice:",
           specialChars: "Speciální znaky:",
+          strengthTierLabel: "Síla hesla:",
+          combinationsLabel: "Možných kombinací:",
+          crackTimeLabel: "Odhadovaný čas na prolomení:",
+          tierVeryWeak: "Velmi slabé",
+          tierWeak: "Slabé",
+          tierFair: "Ucházející",
+          tierStrong: "Silné",
+          tierVeryStrong: "Velmi silné",
+          timeUnitSeconds: "sekund",
+          timeUnitMinutes: "minut",
+          timeUnitHours: "hodin",
+          timeUnitDays: "dní",
+          timeUnitYears: "let",
+          crackTimeLessThanOne: "okamžitě",
+          crackTimeSciFormat: "~{value} {unit}",
+          noCharSetSelected: "Vyberte alespoň jeden typ znaků",
           newPassword: "Nové heslo",
           copyToClipboard: "Kopírovat",
           copied: "✓ Zkopírováno!",
@@ -318,6 +475,8 @@
 
         document.getElementById("langSwitcher").value = lang;
         localStorage.setItem(LANG_STORAGE_KEY, lang);
+
+        updateStrengthInfo();
       }
 
       /**
@@ -356,6 +515,218 @@
           result += charSet.charAt(Math.floor(Math.random() * charSet.length));
         }
         return result;
+      }
+
+      const CRACK_RATE_GUESSES_PER_SEC = 1e10;
+      const CRACK_TIME_SCI_NOTATION_THRESHOLD_YEARS = 10000;
+      const METER_MAX_BITS = 128;
+
+      const STRENGTH_TIERS = [
+        { key: "tierVeryWeak", maxBits: 28 },
+        { key: "tierWeak", maxBits: 36 },
+        { key: "tierFair", maxBits: 60 },
+        { key: "tierStrong", maxBits: 128 },
+        { key: "tierVeryStrong", maxBits: Infinity },
+      ];
+
+      const TIER_COLORS = {
+        tierVeryWeak: "#dc2626",
+        tierWeak: "#f97316",
+        tierFair: "#eab308",
+        tierStrong: "#65a30d",
+        tierVeryStrong: "#16a34a",
+      };
+
+      /**
+       * @param {boolean} includeLowerCase
+       * @param {boolean} includeUpperCase
+       * @param {boolean} includeNumbers
+       * @param {boolean} includeSpecialChars
+       * @returns {number}
+       */
+      function getCharSetSize(
+        includeLowerCase,
+        includeUpperCase,
+        includeNumbers,
+        includeSpecialChars,
+      ) {
+        let size = 0;
+        size += includeLowerCase ? 26 : 0;
+        size += includeUpperCase ? 26 : 0;
+        size += includeNumbers ? 10 : 0;
+        size += includeSpecialChars ? 28 : 0;
+        return size;
+      }
+
+      /**
+       * @param {number} passLength
+       * @param {number} charSetSize
+       * @returns {number}
+       */
+      function calculateCombinations(passLength, charSetSize) {
+        if (charSetSize <= 0 || passLength <= 0) {
+          return 0;
+        }
+        return Math.pow(charSetSize, passLength);
+      }
+
+      /**
+       * @param {number} passLength
+       * @param {number} charSetSize
+       * @returns {number}
+       */
+      function calculateEntropyBits(passLength, charSetSize) {
+        if (charSetSize <= 0) {
+          return -Infinity;
+        }
+        return passLength * Math.log2(charSetSize);
+      }
+
+      /**
+       * @param {number} bits
+       * @returns {string|null}
+       */
+      function classifyStrengthTier(bits) {
+        if (!Number.isFinite(bits)) {
+          return null;
+        }
+        for (const tier of STRENGTH_TIERS) {
+          if (bits < tier.maxBits) {
+            return tier.key;
+          }
+        }
+        return STRENGTH_TIERS[STRENGTH_TIERS.length - 1].key;
+      }
+
+      /**
+       * @param {number} combinations
+       * @returns {number}
+       */
+      function calculateCrackTimeSeconds(combinations) {
+        if (!Number.isFinite(combinations) || combinations <= 0) {
+          return 0;
+        }
+        return combinations / (2 * CRACK_RATE_GUESSES_PER_SEC);
+      }
+
+      /**
+       * @param {number} combinations
+       * @returns {string}
+       */
+      function formatCombinations(combinations) {
+        if (combinations <= 0 || !Number.isFinite(combinations)) {
+          return "0";
+        }
+        if (combinations < 1000) {
+          return String(Math.round(combinations));
+        }
+        const exponent = Math.floor(Math.log10(combinations));
+        let mantissa = combinations / Math.pow(10, exponent);
+        let roundedMantissa = Math.round(mantissa * 100) / 100;
+        let finalExponent = exponent;
+        if (roundedMantissa >= 10) {
+          roundedMantissa = roundedMantissa / 10;
+          finalExponent += 1;
+        }
+        return `${roundedMantissa.toFixed(2)} × 10^${finalExponent}`;
+      }
+
+      /**
+       * @param {number} seconds
+       * @returns {{value?: number, unitKey?: string, lessThanOne?: boolean, sciYears?: string}}
+       */
+      function formatCrackTime(seconds) {
+        const SECONDS_PER_MINUTE = 60;
+        const SECONDS_PER_HOUR = 3600;
+        const SECONDS_PER_DAY = 86400;
+        const SECONDS_PER_YEAR = 31557600;
+
+        if (seconds < 1) {
+          return { lessThanOne: true };
+        }
+        if (seconds < SECONDS_PER_MINUTE) {
+          return { value: Math.round(seconds), unitKey: "timeUnitSeconds" };
+        }
+        if (seconds < SECONDS_PER_HOUR) {
+          return {
+            value: Math.round(seconds / SECONDS_PER_MINUTE),
+            unitKey: "timeUnitMinutes",
+          };
+        }
+        if (seconds < SECONDS_PER_DAY) {
+          return {
+            value: Math.round(seconds / SECONDS_PER_HOUR),
+            unitKey: "timeUnitHours",
+          };
+        }
+        if (seconds < SECONDS_PER_YEAR) {
+          return {
+            value: Math.round(seconds / SECONDS_PER_DAY),
+            unitKey: "timeUnitDays",
+          };
+        }
+
+        const years = seconds / SECONDS_PER_YEAR;
+        if (years > CRACK_TIME_SCI_NOTATION_THRESHOLD_YEARS) {
+          return { sciYears: formatCombinations(years) };
+        }
+        return { value: Math.round(years), unitKey: "timeUnitYears" };
+      }
+
+      function updateStrengthInfo() {
+        const passLen =
+          parseInt(document.getElementById("passLen").value, 10) || 0;
+        const lowerCaseChars =
+          document.getElementById("lowerCaseChars").checked;
+        const upperCaseChars =
+          document.getElementById("upperCaseChars").checked;
+        const numberChars = document.getElementById("numberChars").checked;
+        const specialChars = document.getElementById("specialChars").checked;
+        const dict = translations[currentLang] || translations[DEFAULT_LANG];
+
+        const charSetSize = getCharSetSize(
+          lowerCaseChars,
+          upperCaseChars,
+          numberChars,
+          specialChars,
+        );
+
+        const combinationsEl = document.getElementById("combinationsValue");
+        const crackTimeEl = document.getElementById("crackTimeValue");
+        const meterFillEl = document.getElementById("strengthMeterFill");
+        const tierValueEl = document.getElementById("strengthTierValue");
+
+        if (charSetSize === 0 || passLen <= 0) {
+          combinationsEl.textContent = dict.noCharSetSelected;
+          crackTimeEl.textContent = dict.noCharSetSelected;
+          tierValueEl.textContent = dict.noCharSetSelected;
+          meterFillEl.style.width = "0%";
+          meterFillEl.style.background = "#d1d5db";
+          return;
+        }
+
+        const combinations = calculateCombinations(passLen, charSetSize);
+        const bits = calculateEntropyBits(passLen, charSetSize);
+        const tierKey = classifyStrengthTier(bits);
+        const crackSeconds = calculateCrackTimeSeconds(combinations);
+        const crackTimeParts = formatCrackTime(crackSeconds);
+
+        combinationsEl.textContent = formatCombinations(combinations);
+        tierValueEl.textContent = dict[tierKey];
+
+        if (crackTimeParts.sciYears) {
+          crackTimeEl.textContent = dict.crackTimeSciFormat
+            .replace("{value}", crackTimeParts.sciYears)
+            .replace("{unit}", dict.timeUnitYears);
+        } else if (crackTimeParts.lessThanOne) {
+          crackTimeEl.textContent = dict.crackTimeLessThanOne;
+        } else {
+          crackTimeEl.textContent = `${crackTimeParts.value} ${dict[crackTimeParts.unitKey]}`;
+        }
+
+        const meterPct = Math.min(100, (bits / METER_MAX_BITS) * 100);
+        meterFillEl.style.width = `${meterPct}%`;
+        meterFillEl.style.background = TIER_COLORS[tierKey];
       }
 
       function showCopiedFeedback() {
@@ -466,14 +837,33 @@
       document
         .getElementById("passLen")
         .addEventListener("input", syncPassLenFromNumber);
+      document
+        .getElementById("passLenSlider")
+        .addEventListener("input", updateStrengthInfo);
+      document
+        .getElementById("passLen")
+        .addEventListener("input", updateStrengthInfo);
       document.getElementById("lowerCaseChars").checked =
         DEFAULT_LOWER_CASE_CHARS;
       document.getElementById("upperCaseChars").checked =
         DEFAULT_UPPER_CASE_CHARS;
       document.getElementById("numberChars").checked = DEFAULT_NUMBER_CHARS;
       document.getElementById("specialChars").checked = DEFAULT_SPECIAL_CHARS;
+      document
+        .getElementById("lowerCaseChars")
+        .addEventListener("change", updateStrengthInfo);
+      document
+        .getElementById("upperCaseChars")
+        .addEventListener("change", updateStrengthInfo);
+      document
+        .getElementById("numberChars")
+        .addEventListener("change", updateStrengthInfo);
+      document
+        .getElementById("specialChars")
+        .addEventListener("change", updateStrengthInfo);
 
       document.getElementById("passId").value = getNewPassword();
+      updateStrengthInfo();
     </script>
   </body>
 </html>
